@@ -249,14 +249,14 @@ int main() {
 			double angle;
 			int path_size = previous_path_x.size();
 
-			for (int i = 0; i < path_size; i++)
+			/*for (int i = 0; i < path_size; i++)
 			{
 				next_x_vals.push_back(previous_path_x[i]);
 				next_y_vals.push_back(previous_path_y[i]);
 			}
 
 			// If there are no paths left, use current vehicle position
-			/*if (path_size == 0)
+			if (path_size == 0)
 			{
 				pos_x = car_x;
 				pos_y = car_y;
@@ -272,6 +272,8 @@ int main() {
 				angle = atan2(pos_y - pos_y2, pos_x - pos_x2);
 			}*/
 
+			// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
+
 			//vector<double> frenet = { 0.0, 0.0 };
 			double dist_inc = 0.5;
 			for (int i = 0; i < 50 - path_size; i++)
@@ -285,11 +287,10 @@ int main() {
 				//next_y_vals.push_back(pos_y + (dist_inc) * sin(angle + (i + 1) * (pi() / 100)));
 				next_x_vals.push_back(xy[0]);
 				next_y_vals.push_back(xy[1]);
-				pos_x += xy[0];
-				pos_y += xy[1];
+				//pos_x += xy[0];
+				//pos_y += xy[1];
 			}
 
-          	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
 			// ************ END WORK AREA ************
           	msgJson["next_x"] = next_x_vals;
           	msgJson["next_y"] = next_y_vals;
