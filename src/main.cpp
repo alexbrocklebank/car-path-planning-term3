@@ -256,7 +256,7 @@ int main() {
 			}
 
 			// If there are no paths left, use current vehicle position
-			if (path_size == 0)
+			/*if (path_size == 0)
 			{
 				pos_x = car_x;
 				pos_y = car_y;
@@ -270,9 +270,9 @@ int main() {
 				double pos_x2 = previous_path_x[path_size - 2];
 				double pos_y2 = previous_path_y[path_size - 2];
 				angle = atan2(pos_y - pos_y2, pos_x - pos_x2);
-			}
+			}*/
 
-			vector<double> frenet = { 0.0, 0.0 };
+			//vector<double> frenet = { 0.0, 0.0 };
 			double dist_inc = 0.5;
 			for (int i = 0; i < 50 - path_size; i++)
 			{
