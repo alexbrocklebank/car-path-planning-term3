@@ -323,27 +323,25 @@ int main() {
 			double target_x = 30.0;
 			double target_y = s(target_x);
 			double target_dist = sqrt((target_x)*(target_x)+(target_y)*(target_y));
-
-			double x_add_on = 0;
+			double N = (target_dist / (0.02*ref_vel / 2.24));
+			double step = target_x / N;
+			double x_add_on = 0.0;
 
 			// Fill up the rest of our path planner from the spline to get the desired length
-			for (int i = 1; i <= 50 - previous_path_x.size(); i++)
+			for (int i = 0; i < 50 - previous_path_x.size(); i++)
 			{
-				double N = (target_dist / (0.02*ref_vel / 2.24));
-				double x_point = x_add_on + (target_x) / N;
+				
+				double x_point = x_add_on + step;
 				double y_point = s(x_point);
 
 				x_add_on = x_point;
 
-				double x_ref = ref_x;
-				double y_ref = ref_y;
+				double x_ref = x_point;
+				double y_ref = y_point;
 
 				// Convert back from previous rotation to global coordinates
-				x_point = (x_ref * cos(ref_yaw) - y_ref * sin(ref_yaw));
-				y_point = (x_ref * sin(ref_yaw) + y_ref * cos(ref_yaw));
-
-				x_point += ref_x;
-				y_point += ref_y;
+				x_point = (x_ref * cos(ref_yaw) - y_ref * sin(ref_yaw)) + ref_x;
+				y_point = (x_ref * sin(ref_yaw) + y_ref * cos(ref_yaw)) + ref_y;
 
 				next_x_vals.push_back(x_point);
 				next_y_vals.push_back(y_point);
