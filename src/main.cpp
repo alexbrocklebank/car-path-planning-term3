@@ -253,9 +253,15 @@ int main() {
 			}
 
 			bool too_close = false;
+			bool too_slow = false;
 			bool lane_change_left = false;
 			bool lane_change_right = false;
 			vector<bool> safe = { true, true, true };
+
+			if (rel_vel < 49.0)
+			{
+				too_slow = true;
+			}
 
 			// Find reference velocity value to use
 			for (int i = 0; i < sensor_fusion.size(); i++)
@@ -285,21 +291,26 @@ int main() {
 					{
 						// Car is in front of me and is within 30m
 						too_close = true;
-						if (lane == 0)
-						{
-							//lane = 1;
-							lane_change_right = true;
-						}
-						else if (lane == 1)
-						{
-							lane_change_left = true;
-							lane_change_right = true;
-						}
-						else if (lane == 2)
-						{
-							lane_change_left = true;
-						}
 					}
+				}
+			}
+
+			// Determine possible lane change manuevers
+			if (too_close || too_slow)
+			{
+				if (lane == 0)
+				{
+					//lane = 1;
+					lane_change_right = true;
+				}
+				else if (lane == 1)
+				{
+					lane_change_left = true;
+					lane_change_right = true;
+				}
+				else if (lane == 2)
+				{
+					lane_change_left = true;
 				}
 			}
 			
