@@ -258,7 +258,7 @@ int main() {
 			bool lane_change_right = false;
 			vector<bool> safe = { true, true, true };
 
-			if (rel_vel < 49.0)
+			if (ref_vel < 49.0)
 			{
 				too_slow = true;
 			}
