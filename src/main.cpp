@@ -247,6 +247,36 @@ int main() {
 
 			// *********** WORK AREA ****************
 
+			if prev_size > 0
+			{
+				car_s = end_path_s;
+			}
+
+			bool too_close = false;
+
+			// Find reference velocity value to use
+			for (int i = 0; i < sensor_fusion.size(); i++)
+			{
+				// Car is in my lane
+				float d = sensor_fusion[i][6];
+				if (d < (2 + 4 * lane + 2) && d >(4 * lane))
+				{
+					double vx = sensor_fusion[i][3];
+					double vy = sensor_fusion[i][4];
+					double check_speed = sqrt(vx*vx + vy*vy);
+					double check_car_s = sensor_fusion[i][5];
+
+					// Project S value outwards in time
+					check_car_s += ((double)prev_size*0.02*check_speed);
+					// Check if S values greater than mine and S gap
+					if ((check_car_s > car_s) && ((check_car_s - car_s) < 30))
+					{
+						// Car is in front of me and is within 30m
+						ref_vel = check_speed;
+					}
+				}
+			}
+
 			// Create a list of widely spaced (x, y) waypoints 
 			vector<double> pts_x;
 			vector<double> pts_y;
