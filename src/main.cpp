@@ -204,7 +204,7 @@ int main() {
   // Start in Lane 1
   int lane = 1;
   // Reference velocity to target
-  double ref_vel = 49.5;
+  double ref_vel = 0.0;
 
   h.onMessage([&lane, &ref_vel, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
@@ -272,9 +272,19 @@ int main() {
 					if ((check_car_s > car_s) && ((check_car_s - car_s) < 30))
 					{
 						// Car is in front of me and is within 30m
-						ref_vel = check_speed;
+						too_close = true;
 					}
 				}
+			}
+
+			// Velocity Increment/Decrement 
+			if (too_close)
+			{
+				ref_vel -= 0.224;
+			}
+			else if (ref_vel < 49.5)
+			{
+				ref_vel += 0.224;
 			}
 
 			// Create a list of widely spaced (x, y) waypoints 
