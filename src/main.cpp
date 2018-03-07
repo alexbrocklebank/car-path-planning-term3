@@ -263,7 +263,7 @@ int main() {
 				// Reference car Frenet
 				float d = sensor_fusion[i][6];
 				double s = sensor_fusion[i][5];
-				int car_lane = math.floor(d / 4.0);
+				int car_lane = (int)d / 4;
 
 				// If theres a car within +-30m in any lane from me
 				if ((car_s - s < 30) && (car_s - s > -30))
