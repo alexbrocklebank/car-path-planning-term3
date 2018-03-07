@@ -247,7 +247,7 @@ int main() {
 
 			// *********** WORK AREA ****************
 
-			if prev_size > 0
+			if (prev_size > 0)
 			{
 				car_s = end_path_s;
 			}
