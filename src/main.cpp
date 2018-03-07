@@ -253,12 +253,24 @@ int main() {
 			}
 
 			bool too_close = false;
+			bool lane_change_left = false;
+			bool lane_change_right = false;
+			vector<bool> safe = { true, true, true };
 
 			// Find reference velocity value to use
 			for (int i = 0; i < sensor_fusion.size(); i++)
 			{
-				// Car is in my lane
+				// Reference car Frenet
 				float d = sensor_fusion[i][6];
+				double s = sensor_fusion[i][5];
+				int car_lane = math.floor(d / 4.0);
+
+				// If theres a car within +-30m in any lane from me
+				if ((car_s - s < 30) && (car_s - s > -30))
+				{
+					safe[car_lane] = false;
+				}
+				// If theres a car in my lane
 				if (d < (2 + 4 * lane + 2) && d >(4 * lane))
 				{
 					double vx = sensor_fusion[i][3];
@@ -273,12 +285,32 @@ int main() {
 					{
 						// Car is in front of me and is within 30m
 						too_close = true;
-						if (lane > 0)
+						if (lane == 0)
 						{
-							lane = 0;
+							//lane = 1;
+							lane_change_right = true;
+						}
+						else if (lane == 1)
+						{
+							lane_change_left = true;
+							lane_change_right = true;
+						}
+						else if (lane == 2)
+						{
+							lane_change_left = true;
 						}
 					}
 				}
+			}
+			
+			// Lane Change
+			if ((lane_change_left) && (safe[lane - 1]))
+			{
+				lane -= 1;
+			}
+			else if ((lane_change_right) && (safe[lane + 1]))
+			{
+				lane += 1;
 			}
 
 			// Velocity Increment/Decrement 
