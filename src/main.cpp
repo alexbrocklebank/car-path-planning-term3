@@ -273,6 +273,10 @@ int main() {
 					{
 						// Car is in front of me and is within 30m
 						too_close = true;
+						if (lane > 0)
+						{
+							lane = 0;
+						}
 					}
 				}
 			}
