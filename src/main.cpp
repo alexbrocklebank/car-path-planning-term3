@@ -295,7 +295,7 @@ int main() {
 				}
 
 				// If theres a car within +-30m in any lane from me
-				if ((car_s - s < 30) && (car_s - s > -30))
+				if ((car_s - s < 20) && (car_s - s > -20))
 				{
 					safe[car_lane] = false;
 				}
@@ -372,8 +372,8 @@ int main() {
 			// Velocity Increment/Decrement 
 			if (too_close)
 			{
-				//ref_vel -= 0.224;
-				ref_vel -= (ref_vel - lead_speed) / lead_distance;
+				ref_vel -= 0.224;
+				//ref_vel -= (ref_vel - lead_speed) / lead_distance;
 
 			}
 			else if (ref_vel < 49.5)
