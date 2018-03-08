@@ -257,6 +257,8 @@ int main() {
 			bool lane_change_left = false;
 			bool lane_change_right = false;
 			vector<bool> safe = { true, true, true };
+			double lead_speed = 49.5;
+			double lead_distance = 0.0;
 
 			if (ref_vel < 49.0)
 			{
@@ -291,6 +293,8 @@ int main() {
 					{
 						// Car is in front of me and is within 30m
 						too_close = true;
+						lead_speed = check_speed;
+						lead_distance = check_car_s - car_s;
 					}
 				}
 			}
@@ -327,7 +331,9 @@ int main() {
 			// Velocity Increment/Decrement 
 			if (too_close)
 			{
-				ref_vel -= 0.224;
+				//ref_vel -= 0.224;
+				ref_vel -= (ref_vel - lead_speed) / (lead_distance - 5);
+
 			}
 			else if (ref_vel < 49.5)
 			{
