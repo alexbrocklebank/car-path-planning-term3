@@ -289,7 +289,7 @@ int main() {
 					// Project S value outwards in time
 					check_car_s += ((double)prev_size*0.02*check_speed);
 					// Check if S values greater than mine and S gap
-					if ((check_car_s > car_s) && ((check_car_s - car_s) < 30))
+					if ((check_car_s > car_s) && ((check_car_s - car_s) < 40))
 					{
 						// Car is in front of me and is within 30m
 						too_close = true;
@@ -300,7 +300,7 @@ int main() {
 			}
 
 			// Determine possible lane change manuevers
-			if (too_close || too_slow)
+			if (too_close && too_slow)
 			{
 				if (lane == 0)
 				{
