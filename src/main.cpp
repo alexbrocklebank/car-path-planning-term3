@@ -257,6 +257,8 @@ int main() {
 			bool lane_change_left = false;
 			bool lane_change_right = false;
 			vector<bool> safe = { true, true, true };
+			vector<double> nearest_forward = { 100, 100, 100 };
+			vector<double> nearest_behind = { -100, -100, -100 };
 			double lead_speed = 49.5;
 			double lead_distance = 0.0;
 
@@ -272,6 +274,25 @@ int main() {
 				float d = sensor_fusion[i][6];
 				double s = sensor_fusion[i][5];
 				int car_lane = (int)d / 4;
+
+				// Cars in front of me
+				if (s >= car_s)
+				{
+					// If car is closer to me than any previous vehicle in its lane
+					if (nearest_forward[car_lane] > (s - car_s))
+					{
+						nearest_forward[car_lane] = s - car_s;
+					}
+				}
+				// Other cars behind me
+				else if (s < car_s)
+				{
+					// If car is closer to me than any previous vehicle in its lane
+					if (nearest_behind[car_lane] < (s - car_s))
+					{
+						nearest_behind[car_lane] = s - car_s;
+					}
+				}
 
 				// If theres a car within +-30m in any lane from me
 				if ((car_s - s < 30) && (car_s - s > -30))
@@ -289,7 +310,7 @@ int main() {
 					// Project S value outwards in time
 					check_car_s += ((double)prev_size*0.02*check_speed);
 					// Check if S values greater than mine and S gap
-					if ((check_car_s > car_s) && ((check_car_s - car_s) < 40))
+					if ((check_car_s > car_s) && ((check_car_s - car_s) < 30))
 					{
 						// Car is in front of me and is within 30m
 						too_close = true;
@@ -318,7 +339,27 @@ int main() {
 				}
 			}
 			
-			// Lane Change
+			// Lane Change Logic
+			if (lane_change_left && lane_change_right)
+			{
+				// Compare gap sizes and forward distances to next leading vehicle
+				double gap_start_left = nearest_forward[lane - 1];
+				double gap_length_left = gap_start_left - nearest_behind[lane - 1];
+
+				double gap_start_right = nearest_forward[lane + 1];
+				double gap_length_right = gap_start_right - nearest_behind[lane + 1];
+
+				// Decide which direction to lane change based on lead distance
+				if (gap_start_left > gap_start_right)
+				{
+					lane_change_right = false;
+				}
+				else
+				{
+					lane_change_left = false;
+				}
+				
+			}
 			if ((lane_change_left) && (safe[lane - 1]))
 			{
 				lane -= 1;
@@ -332,7 +373,7 @@ int main() {
 			if (too_close)
 			{
 				//ref_vel -= 0.224;
-				ref_vel -= (ref_vel - lead_speed) / (lead_distance - 5);
+				ref_vel -= (ref_vel - lead_speed) / lead_distance;
 
 			}
 			else if (ref_vel < 49.5)
