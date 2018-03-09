@@ -117,4 +117,10 @@ My implementation of the path planner is very simple and straightforward.  With 
 6. Use a spline to smooth the path and evenly space the projected path waypoints.
 7. Provide the smoothed path to the `msgJson["next_x"]` and `msgJson["next_y"]` to be transmitted to the simulator.
 
+The performance of the path planner has been great, if slightly conservative.  Having to await a gap to appear on either side does cause slower performance than actively seeking gaps for passing.  However, when left alone for some time, the planner acheived 21.55 miles without incident.
+
 ## Reflection
+
+I didn't start out with the idea to make a path planner almost entirely on boolean logic, but as I was testing various conditions just tweaking the code I had, it performed better than I expected.  So I added more conditions to check for, and it improved each step of the way.  Of course a real-world senario of a self-driving car would be infeasible if not impossible to build if-statements for every scenario, and almost every facet would be much less precise than the simulator.
+
+Some things I'm looking to change are changing hard-coded values to parameters, such as `safe_distance_forward`, `speed_limit`, and `vel_step`.  I would also like to add a vector of gaps in traffic, so that slowing down or speeding up into various gaps that exist along the road can be utilized instead of waiting for opportunity to present itself.  With this I will also need to keep track of the speeds of each lane, or even each vehicle, in order to perform the lane change maneuvers safely.
