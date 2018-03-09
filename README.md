@@ -1,6 +1,6 @@
 # CarND-Path-Planning-Project
 Self-Driving Car Engineer Nanodegree Program
-   
+
 ### Simulator.
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases).
 
@@ -38,13 +38,13 @@ Here is the data provided from the Simulator to the C++ Program
 #### Previous path data given to the Planner
 
 //Note: Return the previous list but with processed points removed, can be a nice tool to show how far along
-the path has processed since last time. 
+the path has processed since last time.
 
 ["previous_path_x"] The previous list of x points previously given to the simulator
 
 ["previous_path_y"] The previous list of y points previously given to the simulator
 
-#### Previous path's end s and d values 
+#### Previous path's end s and d values
 
 ["end_path_s"] The previous list's last point's frenet s value
 
@@ -52,7 +52,7 @@ the path has processed since last time.
 
 #### Sensor Fusion Data, a list of all other car's attributes on the same side of the road. (No Noise)
 
-["sensor_fusion"] A 2d vector of cars and then that car's [car's unique ID, car's x position in map coordinates, car's y position in map coordinates, car's x velocity in m/s, car's y velocity in m/s, car's s position in frenet coordinates, car's d position in frenet coordinates. 
+["sensor_fusion"] A 2d vector of cars and then that car's [car's unique ID, car's x position in map coordinates, car's y position in map coordinates, car's x velocity in m/s, car's y velocity in m/s, car's s position in frenet coordinates, car's d position in frenet coordinates.
 
 ## Details
 
@@ -82,59 +82,39 @@ A really helpful resource for doing this project and creating smooth trajectorie
   * Run either `install-mac.sh` or `install-ubuntu.sh`.
   * If you install from source, checkout to commit `e94b6e1`, i.e.
     ```
-    git clone https://github.com/uWebSockets/uWebSockets 
+    git clone https://github.com/uWebSockets/uWebSockets
     cd uWebSockets
     git checkout e94b6e1
     ```
 
-## Editor Settings
+## Path Planner Logic
 
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
+The very first thing added is two variables `int lane` and `double ref_vel` to keep track of
+both the current lane of our autonomous vehicle, which I'll abbreviate often as AV, and the
+reference velocity.  These are declared outside the main lamda function to persistently keep track
+of these values between websocket calls.  The foundation of my code was obtained from the
+walkthrough video, which helped me quickly get up to speed with controlling the simulator.
 
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
+My approach was to set boolean flags for various states the AV could be in, such as:
+* `bool too_close`: Being too close to the leading vehicle.
+* `bool too_slow`: Traveling at a sub-optimal speed.
+* `bool lane_change_left`: Attempt to lane change left when available.
+* `bool lane_change_right`: Attempt to lane change right when available.
+* `vector<bool> safe`: An array of 3 boolean values, one for each lane, determining if they are safe to perform a lane change into by having no vehicles inhabiting them close to the AV along the s axis of the road.
 
-## Code Style
+In addition to these flags, I have a few other important variables to consider:
+* `vector<double> nearest_forward`: Vector of the distance to the closest vehicle to the AV in each of the lanes, with a 100m horizon set.
+* `vector<double> nearest_behind`: Vector of the distance to the closest vehicle to the AV in each lane, with a 100m horizon set in the reverse direction.
+* `double lead_speed`: Keeps track of the leading vehicles speed to later ensure we do not rear-end the vehicle.
+* `double lead_distance`: Stores the distance to the lead vehicle by finding the difference in s-values.
 
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
+My implementation of the path planner is very simple and straightforward.  With these few variables in place I proceed to break the problem down into a few easy steps.
+1. Loop through sensor fusion data to analyze locations of other cars.
+2. Closest vehicles to the AV have their distances stored to be aware of possible gaps in adjacent lanes or possible tailgating of a lead vehicle.
+3. Determine changes to the vehicle's s-value component by speeding up or slowing down with regards to current speed (`too_slow`) or proximity to lead vehicle (`too_close`).
+4. Make decisions based on the vehicle's d-value by changing lanes left (`lane_change_left`) or right (`lane_change_right`).  If there's a choice of making either lane change, I use the `nearest_forward` vector to determine which lane change has a greater distance of open space.  Finally, before making the maneuver, I check to see if those lanes are safe (`safe[lane]`).
+5. Determine future path x and y waypoints.
+6. Use a spline to smooth the path and evenly space the projected path waypoints.
+7. Provide the smoothed path to the `msgJson["next_x"]` and `msgJson["next_y"]` to be transmitted to the simulator.
 
-## Project Instructions and Rubric
-
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
-
-
-## Call for IDE Profiles Pull Requests
-
-Help your fellow students!
-
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to ensure
-that students don't feel pressured to use one IDE or another.
-
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
-
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
-
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
-
+## Reflection

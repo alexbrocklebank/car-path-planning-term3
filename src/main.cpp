@@ -243,15 +243,11 @@ int main() {
           	// Sensor Fusion Data, a list of all other cars on the same side of the road.
           	auto sensor_fusion = j[1]["sensor_fusion"];
 
-			int prev_size = previous_path_x.size();
 
 			// *********** WORK AREA ****************
 
-			// If there is no previous path data, use last previous s value
-			if (prev_size > 0)
-			{
-				car_s = end_path_s;
-			}
+			// Previous Path length
+			int prev_size = previous_path_x.size();
 
 			// State Flags
 			bool too_close = false;						// Too close to lead vehicle
@@ -268,10 +264,10 @@ int main() {
 			double lead_speed = 49.5;
 			double lead_distance = 0.0;
 
-			// If we are going below this speed, we are going too slow
-			if (ref_vel < 49.0)
+			// If there is previous path data left (not 0) then set the car s value to the end of that path
+			if (prev_size > 0)
 			{
-				too_slow = true;
+				car_s = end_path_s;
 			}
 
 			// Main Sensor Fusion loop through all vehicles
@@ -335,6 +331,25 @@ int main() {
 			}
 			// End Main Sensor Fusion loop
 
+			// If we are going below this speed, we are going too slow
+			if (ref_vel < 49.0)
+			{
+				too_slow = true;
+			}
+
+			// Reduce vehicle velocity if we are too close to leading vehicle
+			if (too_close)
+			{
+				ref_vel -= 0.224;
+				//ref_vel -= (ref_vel - lead_speed) / lead_distance;
+
+			}
+			// Otherwise speed up if we are below the optimal speed
+			else if (ref_vel < 49.5)
+			{
+				ref_vel += 0.224;
+			}
+
 			// Determine possible lane change manuevers if theres a car too close 
 			//  ahead and we're reduced to a slow speed.
 			if (too_close && too_slow)
@@ -386,19 +401,6 @@ int main() {
 			else if ((lane_change_right) && (safe[lane + 1]))
 			{
 				lane += 1;
-			}
-
-			// Reduce vehicle velocity if we are too close to leading vehicle
-			if (too_close)
-			{
-				ref_vel -= 0.224;
-				//ref_vel -= (ref_vel - lead_speed) / lead_distance;
-
-			}
-			// Otherwise speed up if we are below the optimal speed
-			else if (ref_vel < 49.5)
-			{
-				ref_vel += 0.224;
 			}
 
 			// Create a list of widely spaced (x, y) waypoints 
