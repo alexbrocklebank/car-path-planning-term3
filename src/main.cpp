@@ -201,9 +201,9 @@ int main() {
   	map_waypoints_dy.push_back(d_y);
   }
 
-  // Start in Lane 1
+  // Keep track of lane location, beginning in Lane 1
   int lane = 1;
-  // Reference velocity to target
+  // Reference velocity of autonomous vehicle
   double ref_vel = 0.0;
 
   h.onMessage([&lane, &ref_vel, &map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
@@ -247,61 +247,74 @@ int main() {
 
 			// *********** WORK AREA ****************
 
+			// If there is no previous path data, use last previous s value
 			if (prev_size > 0)
 			{
 				car_s = end_path_s;
 			}
 
-			bool too_close = false;
-			bool too_slow = false;
-			bool lane_change_left = false;
-			bool lane_change_right = false;
-			vector<bool> safe = { true, true, true };
-			vector<double> nearest_forward = { 100, 100, 100 };
-			vector<double> nearest_behind = { -100, -100, -100 };
+			// State Flags
+			bool too_close = false;						// Too close to lead vehicle
+			bool too_slow = false;						// Speed is sub-optimal 
+			bool lane_change_left = false;				// Attempt left lane change
+			bool lane_change_right = false;				// Attempt right lane change
+			vector<bool> safe = { true, true, true };	// List of lanes (0,1,2) and whether they're vacant
+
+			// Vectors of the nearest vehicles to our position in all 3 lanes.
+			vector<double> nearest_forward = { 100, 100, 100 };		// Closest vehicles in front of us
+			vector<double> nearest_behind = { -100, -100, -100 };	// Closest vehicle behind us
+
+			// Lead vehicle speed and distance, if one exists.
 			double lead_speed = 49.5;
 			double lead_distance = 0.0;
 
+			// If we are going below this speed, we are going too slow
 			if (ref_vel < 49.0)
 			{
 				too_slow = true;
 			}
 
-			// Find reference velocity value to use
+			// Main Sensor Fusion loop through all vehicles
 			for (int i = 0; i < sensor_fusion.size(); i++)
 			{
 				// Reference car Frenet
 				float d = sensor_fusion[i][6];
 				double s = sensor_fusion[i][5];
+				// Integer division of vehicle d value by 4(lane width) to determine lane (0, 1, 2)
 				int car_lane = (int)d / 4;
 
-				// Cars in front of me
+				// If the Car is in front of me
 				if (s >= car_s)
 				{
-					// If car is closer to me than any previous vehicle in its lane
+					// If the Car is closer to me than any previous vehicle in its lane
 					if (nearest_forward[car_lane] > (s - car_s))
 					{
+						// Record this Car's s distance from me as the closest
 						nearest_forward[car_lane] = s - car_s;
 					}
 				}
-				// Other cars behind me
+				// If the Car is behind me
 				else if (s < car_s)
 				{
 					// If car is closer to me than any previous vehicle in its lane
 					if (nearest_behind[car_lane] < (s - car_s))
 					{
+						// Record this Car's s distance from me as the closest
 						nearest_behind[car_lane] = s - car_s;
 					}
 				}
 
-				// If theres a car within +-30m in any lane from me
+				// If the Car is within +-20m from me in any lane
 				if ((car_s - s < 20) && (car_s - s > -20))
 				{
+					// Mark the lane as unsafe for lane changes
 					safe[car_lane] = false;
 				}
-				// If theres a car in my lane
+
+				// If the Car is in my lane
 				if (d < (2 + 4 * lane + 2) && d >(4 * lane))
 				{
+					// Record more detail about the current Car's location and speed
 					double vx = sensor_fusion[i][3];
 					double vy = sensor_fusion[i][4];
 					double check_speed = sqrt(vx*vx + vy*vy);
@@ -314,38 +327,43 @@ int main() {
 					{
 						// Car is in front of me and is within 30m
 						too_close = true;
+						// Record the lead vehicles distance away and speed
 						lead_speed = check_speed;
 						lead_distance = check_car_s - car_s;
 					}
 				}
 			}
+			// End Main Sensor Fusion loop
 
-			// Determine possible lane change manuevers
+			// Determine possible lane change manuevers if theres a car too close 
+			//  ahead and we're reduced to a slow speed.
 			if (too_close && too_slow)
 			{
+				// If we're in the Left Lane
 				if (lane == 0)
 				{
-					//lane = 1;
 					lane_change_right = true;
 				}
+				// If we're in the Middle Lane
 				else if (lane == 1)
 				{
 					lane_change_left = true;
 					lane_change_right = true;
 				}
+				// If we're in the Right Lane
 				else if (lane == 2)
 				{
 					lane_change_left = true;
 				}
 			}
 			
-			// Lane Change Logic
+			// If we have two lane change options, determine the best choice by 
+			//  choosing the option with the most forward distance available.
 			if (lane_change_left && lane_change_right)
 			{
-				// Compare gap sizes and forward distances to next leading vehicle
+				// Compare gap sizes and forward distances to next leading vehicle for both lanes
 				double gap_start_left = nearest_forward[lane - 1];
 				double gap_length_left = gap_start_left - nearest_behind[lane - 1];
-
 				double gap_start_right = nearest_forward[lane + 1];
 				double gap_length_right = gap_start_right - nearest_behind[lane + 1];
 
@@ -360,6 +378,7 @@ int main() {
 				}
 				
 			}
+			// Set lane change maneuver if destination lanes are safe
 			if ((lane_change_left) && (safe[lane - 1]))
 			{
 				lane -= 1;
@@ -369,13 +388,14 @@ int main() {
 				lane += 1;
 			}
 
-			// Velocity Increment/Decrement 
+			// Reduce vehicle velocity if we are too close to leading vehicle
 			if (too_close)
 			{
 				ref_vel -= 0.224;
 				//ref_vel -= (ref_vel - lead_speed) / lead_distance;
 
 			}
+			// Otherwise speed up if we are below the optimal speed
 			else if (ref_vel < 49.5)
 			{
 				ref_vel += 0.224;
@@ -397,6 +417,7 @@ int main() {
 				double prev_car_x = car_x - cos(car_yaw);
 				double prev_car_y = car_y - sin(car_yaw);
 
+				// Add the points to the x/y point vectors
 				pts_x.push_back(prev_car_x);
 				pts_x.push_back(car_x);
 				pts_y.push_back(prev_car_y);
@@ -439,7 +460,6 @@ int main() {
 
 			// Create a spline
 			tk::spline s;
-
 			s.set_points(pts_x, pts_y);
 
 			// Actual (x,y) coordinates for the planner
@@ -456,6 +476,7 @@ int main() {
 			// Calculate how to break up spline points to travel at desired velocity
 			double target_x = 30.0;
 			double target_y = s(target_x);
+			// Variables used in the following loop, performing math thats needed only once to save cpu
 			double target_dist = sqrt((target_x)*(target_x)+(target_y)*(target_y));
 			double N = (target_dist / (0.02*ref_vel / 2.24));
 			double step = target_x / N;
@@ -464,7 +485,7 @@ int main() {
 			// Fill up the rest of our path planner from the spline to get the desired length
 			for (int i = 0; i < 50 - previous_path_x.size(); i++)
 			{
-				
+				// The Spline does all the heavy lifting for our path
 				double x_point = x_add_on + step;
 				double y_point = s(x_point);
 
@@ -477,6 +498,7 @@ int main() {
 				x_point = (x_ref * cos(ref_yaw) - y_ref * sin(ref_yaw)) + ref_x;
 				y_point = (x_ref * sin(ref_yaw) + y_ref * cos(ref_yaw)) + ref_y;
 
+				// Add points to path planner x/y vectors
 				next_x_vals.push_back(x_point);
 				next_y_vals.push_back(y_point);
 			}
